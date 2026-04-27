@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Membaca Bersuara - Arka</title>
+  
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#38bdf8">
+
   <style>
     :root { --bg: #0f172a; --card: #1e293b; --primary: #38bdf8; --text: #f8fafc; --success: #4ade80; --danger: #f87171; --accent: #818cf8; }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -61,7 +65,7 @@
     <div class="form-group">
       <label>Batas Waktu (Detik)</label>
       <input type="number" id="set-waktu" value="30" min="10" max="120">
-      <small style="color: #64748b; margin-top: 5px; display: block;">Arka harus baca makin cepat!</small>
+      <small style="color: #64748b; margin-top: 5px; display: block;">Makin sebentar, Arka harus baca makin cepat!</small>
     </div>
 
     <button class="btn-main" onclick="mintaAksesMic()">MULAI REKAM</button>
@@ -97,7 +101,7 @@
   <script>
     // --- DATABASE 100 CERITA ---
     const dbCerita = {
-      mudah: [ // 34 Cerita Pendek
+      mudah: [ 
         "Aku suka main bola.", "Kucing itu tidur nyenyak.", "Buku ini sangat baru.", "Ibu masak nasi goreng.",
         "Ayah sedang baca buku.", "Bola Arka warna biru.", "Burung terbang di langit.", "Ikan berenang di air.",
         "Kelinci suka makan wortel.", "Sapi sedang makan rumput.", "Bintang bersinar di malam.", "Matahari terbit pagi hari.",
@@ -108,7 +112,7 @@
         "Pintu rumah sudah buka.", "Sepatu Arka warna hitam.", "Kipas angin terus berputar.", "Jam dinding berbunyi keras.",
         "Ayo kita cuci tangan.", "Gigi bersih dan sehat."
       ],
-      sedang: [ // 33 Cerita Menengah
+      sedang: [ 
         "Arka suka main mobil-mobilan di halaman rumah bersama teman.",
         "Setiap pagi ibu membuat sarapan yang enak untuk keluarga.",
         "Ayah mengajak Arka pergi jalan-jalan ke taman kota hari ini.",
@@ -143,7 +147,7 @@
         "Arka membangun istana pasir yang sangat besar di pinggir pantai.",
         "Balon udara terbang naik sangat tinggi ke langit yang luas."
       ],
-      sulit: [ // 33 Cerita Panjang (Paragraf)
+      sulit: [ 
         "Pada hari Minggu yang cerah, Arka dan keluarga pergi berlibur ke pantai. Pasir pantainya sangat putih dan lembut di kaki. Kami bermain ombak sampai sore.",
         "Kucing kesayangan Arka bernama si Manis. Bulunya berwarna belang tiga dan sangat halus. Setiap lapar, si Manis akan mengeong keras meminta ikan segar.",
         "Di halaman belakang rumah ada pohon mangga yang berbuah sangat lebat. Ayah memanjat pohon itu menggunakan tangga kayu. Kami makan mangga yang sangat manis rasanya.",
@@ -207,7 +211,6 @@
       
       navigator.mediaDevices.getUserMedia({ audio: true })
         .then(function(stream) {
-          // Izin sukses, lanjut main
           mulaiGameDanRekam();
         })
         .catch(function(err) {
@@ -219,9 +222,7 @@
       const level = document.getElementById('set-level').value;
       const bankCerita = dbCerita[level];
       
-      // Pilih cerita secara acak dari 100 database
       targetTeksLengkap = bankCerita[Math.floor(Math.random() * bankCerita.length)];
-      
       waktu = parseInt(document.getElementById('set-waktu').value);
       teksArka = "";
 
@@ -331,5 +332,16 @@
       document.getElementById('screen-menu').classList.remove('hidden');
     }
   </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(reg => console.log('PWA Siap!'))
+          .catch(err => console.log('PWA Gagal:', err));
+      });
+    }
+  </script>
+
 </body>
 </html>
