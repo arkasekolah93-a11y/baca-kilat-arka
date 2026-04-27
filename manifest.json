@@ -1,7 +1,7 @@
 {
   "name": "Membaca Bersuara Arka",
   "short_name": "Baca Arka",
-  "start_url": "./baca-suara.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#38bdf8",
