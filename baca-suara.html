@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Membaca Bersuara - Arka</title>
+  <style>
+    :root { --bg: #0f172a; --card: #1e293b; --primary: #38bdf8; --text: #f8fafc; --success: #4ade80; --danger: #f87171; --accent: #818cf8; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    
+    html { background-color: var(--bg); }
+    body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100dvh; overflow-y: auto; padding: 20px 0; }
+    
+    .container { background: var(--card); width: 90%; max-width: 500px; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); text-align: center; position: relative; margin: auto;}
+    
+    .hidden { display: none !important; }
+    h2 { color: var(--primary); font-size: 1.5rem; margin-top: 0; text-transform: uppercase; letter-spacing: 2px; }
+
+    /* Form & UI */
+    .form-group { margin-bottom: 15px; text-align: left; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; }
+    label { display: block; font-weight: bold; margin-bottom: 10px; color: #94a3b8; font-size: 0.9rem; }
+    select, input[type="number"] { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 1rem; }
+    
+    button.btn-main { width: 100%; background: var(--primary); color: #0f172a; border: none; padding: 15px; border-radius: 12px; font-size: 1.2rem; cursor: pointer; font-weight: 900; margin-top: 10px; box-shadow: 0 4px 0 #0284c7; transition: 0.1s;}
+    button.btn-main:active { transform: translateY(3px); box-shadow: 0 1px 0 #0284c7; }
+
+    /* Game Area */
+    .header-game { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #334155; padding-bottom: 10px; }
+    #timer { font-size: 2.5rem; font-weight: 900; color: #facc15; }
+
+    /* Teks Target */
+    #target-text { font-size: 1.8rem; line-height: 1.5; font-weight: 700; margin: 20px 0; padding: 20px; background: #0f172a; border-radius: 15px; border: 2px dashed #334155; text-align: left; }
+    
+    /* Status Mic */
+    .mic-status { display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 20px; }
+    .mic-icon { font-size: 3rem; background: var(--danger); width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; border-radius: 50%; animation: pulse 1.5s infinite; margin-bottom: 10px; box-shadow: 0 0 15px var(--danger); }
+    @keyframes pulse { 0% { transform: scale(0.95); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(0.95); opacity: 0.8; } }
+    
+    #live-transcript { font-size: 1rem; color: var(--success); min-height: 30px; font-style: italic; opacity: 0.8; }
+
+    /* Recap Table */
+    .recap-box { background: #0f172a; padding: 15px; border-radius: 10px; text-align: left; margin-bottom: 15px; font-size: 1.2rem; line-height: 1.6; }
+    .word-correct { color: var(--success); font-weight: bold; }
+    .word-wrong { color: var(--danger); text-decoration: line-through; opacity: 0.7; }
+  </style>
+</head>
+<body>
+
+  <div id="screen-menu" class="container">
+    <h2>🎙️ Baca Bersuara</h2>
+    
+    <div class="form-group">
+      <label>Tingkat Kesulitan (Acak)</label>
+      <select id="set-level">
+        <option value="mudah">Mudah (Kalimat Sangat Pendek)</option>
+        <option value="sedang">Sedang (Kalimat Sedang)</option>
+        <option value="sulit">Sulit (Paragraf Panjang)</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Batas Waktu (Detik)</label>
+      <input type="number" id="set-waktu" value="30" min="10" max="120">
+      <small style="color: #64748b; margin-top: 5px; display: block;">Arka harus baca makin cepat!</small>
+    </div>
+
+    <button class="btn-main" onclick="mintaAksesMic()">MULAI REKAM</button>
+  </div>
+
+  <div id="screen-game" class="container hidden">
+    <div class="header-game">
+      <span style="font-weight: bold; color: #94a3b8;">Ayo Baca!</span>
+      <span id="timer">30</span>
+    </div>
+
+    <div id="target-text">Memuat teks...</div>
+
+    <div class="mic-status">
+      <div class="mic-icon">🎤</div>
+      <div id="live-transcript">Mendengarkan suara Arka...</div>
+    </div>
+    
+    <button class="btn-main" style="background: var(--success); margin-top: 20px;" onclick="selesaiBaca()">SELESAI BACA MANTAP!</button>
+  </div>
+
+  <div id="screen-recap" class="container hidden">
+    <h2>🏆 Hasil Koreksi</h2>
+    <h1 id="final-score" style="margin:10px 0; font-size: 4rem; color: var(--success);">100</h1>
+    <p id="score-msg" style="color: #94a3b8; margin-bottom: 20px;">Tingkat Akurasi Membaca</p>
+    
+    <div class="recap-box" id="koreksi-hasil">
+      </div>
+
+    <button class="btn-main" onclick="mainLagi()">BACA CERITA LAIN</button>
+  </div>
+
+  <script>
+    // --- DATABASE 100 CERITA ---
+    const dbCerita = {
+      mudah: [ // 34 Cerita Pendek
+        "Aku suka main bola.", "Kucing itu tidur nyenyak.", "Buku ini sangat baru.", "Ibu masak nasi goreng.",
+        "Ayah sedang baca buku.", "Bola Arka warna biru.", "Burung terbang di langit.", "Ikan berenang di air.",
+        "Kelinci suka makan wortel.", "Sapi sedang makan rumput.", "Bintang bersinar di malam.", "Matahari terbit pagi hari.",
+        "Bunga mawar warna merah.", "Baju ini sangat bersih.", "Topi untuk lindungi kepala.", "Adik minum susu manis.",
+        "Ayam berkokok sangat keras.", "Kuda lari dengan cepat.", "Katak lompat di rumput.", "Meja kayu sangat kuat.",
+        "Gelas itu isi air.", "Angin bertiup sangat sejuk.", "Pelangi muncul setelah hujan.", "Bulan bersinar malam hari.",
+        "Bebek mandi di sungai.", "Arka suka makan buah.", "Apel rasanya sangat manis.", "Rumput hijau dan segar.",
+        "Pintu rumah sudah buka.", "Sepatu Arka warna hitam.", "Kipas angin terus berputar.", "Jam dinding berbunyi keras.",
+        "Ayo kita cuci tangan.", "Gigi bersih dan sehat."
+      ],
+      sedang: [ // 33 Cerita Menengah
+        "Arka suka main mobil-mobilan di halaman rumah bersama teman.",
+        "Setiap pagi ibu membuat sarapan yang enak untuk keluarga.",
+        "Ayah mengajak Arka pergi jalan-jalan ke taman kota hari ini.",
+        "Di taman ada banyak pohon rindang dan bunga berwarna-warni.",
+        "Burung merpati terbang mencari makan di atas tanah yang lapang.",
+        "Kucing lucu itu mengejar tikus kecil sampai ke belakang rumah.",
+        "Kami pergi ke kebun binatang untuk melihat gajah dan harimau.",
+        "Hujan turun dengan deras sehingga kami harus memakai payung.",
+        "Malam ini langit sangat cerah dan penuh dengan bintang berkelip.",
+        "Adik menangis karena mainannya jatuh dan rusak di lantai.",
+        "Sepeda baru Arka sangat cepat dan remnya sangat pakem.",
+        "Ibu membeli buah mangga dan pisang manis di pasar tradisional.",
+        "Rumah kakek ada di desa yang sangat sejuk dan damai.",
+        "Air sungai mengalir sangat jernih melewati bebatuan yang besar.",
+        "Kura-kura berjalan sangat lambat membawa rumahnya di punggung.",
+        "Anjing penjaga rumah menggonggong keras saat ada orang asing masuk.",
+        "Kakak sedang belajar matematika dan membaca buku pelajaran tebal.",
+        "Kereta api melaju sangat cepat melewati stasiun dan terowongan gelap.",
+        "Pesawat terbang tinggi menembus awan putih di langit yang biru.",
+        "Pohon kelapa di pinggir pantai melambai ditiup angin laut sore.",
+        "Nelayan menangkap banyak ikan segar menggunakan jaring yang besar.",
+        "Bapak petani menanam padi di sawah yang berlumpur basah.",
+        "Sapi perah menghasilkan susu segar yang sehat untuk diminum anak-anak.",
+        "Kambing memakan daun dan rumput segar di padang rumput hijau.",
+        "Gigi Arka sangat sehat karena rajin sikat gigi sebelum tidur malam.",
+        "Mandi dua kali sehari membuat badan segar dan bersih dari kuman.",
+        "Mencuci tangan pakai sabun penting sebelum kita mulai makan siang.",
+        "Berolahraga pagi membuat tubuh sehat dan hati menjadi sangat gembira.",
+        "Kami menyanyi bersama dengan suara yang sangat lantang dan merdu.",
+        "Lukisan pemandangan gunung itu sangat indah dan mempesona mata.",
+        "Buku cerita bergambar ini sangat seru dan lucu untuk dibaca.",
+        "Arka membangun istana pasir yang sangat besar di pinggir pantai.",
+        "Balon udara terbang naik sangat tinggi ke langit yang luas."
+      ],
+      sulit: [ // 33 Cerita Panjang (Paragraf)
+        "Pada hari Minggu yang cerah, Arka dan keluarga pergi berlibur ke pantai. Pasir pantainya sangat putih dan lembut di kaki. Kami bermain ombak sampai sore.",
+        "Kucing kesayangan Arka bernama si Manis. Bulunya berwarna belang tiga dan sangat halus. Setiap lapar, si Manis akan mengeong keras meminta ikan segar.",
+        "Di halaman belakang rumah ada pohon mangga yang berbuah sangat lebat. Ayah memanjat pohon itu menggunakan tangga kayu. Kami makan mangga yang sangat manis rasanya.",
+        "Sore ini Arka belajar mengendarai sepeda roda dua tanpa bantuan roda kecil. Awalnya Arka sempat terjatuh, namun ia terus bangkit dan akhirnya bisa melaju kencang.",
+        "Hujan badai semalam membuat pohon besar di dekat rumah tumbang. Angin bertiup sangat kencang dan suara petir menggelegar menakutkan. Untunglah rumah kami aman.",
+        "Saat pergi ke kebun binatang, kami melihat seekor jerapah memakan daun dari pucuk pohon tinggi. Lehernya sangat panjang. Jerapah itu terlihat sangat anggun.",
+        "Ibu sedang sibuk memasak sup ayam dan menggoreng tempe di dapur. Wangi masakan ibu tercium sampai ke ruang tamu, membuat perut Arka tiba-tiba menjadi lapar.",
+        "Ayah membelikan sepatu baru untuk Arka karena sepatu lamanya sudah mulai sempit. Sepatu itu berwarna biru dan kuning, persis seperti warna kesukaan Arka.",
+        "Kami berkemah di kaki gunung pada liburan sekolah lalu. Malam hari udaranya sangat dingin, sehingga kami membuat api unggun untuk menghangatkan badan bersama.",
+        "Lebah adalah serangga kecil yang sangat rajin bekerja. Mereka terbang dari satu bunga ke bunga lain untuk mencari sari bunga dan membuat madu yang manis sehat.",
+        "Kakak mendapat juara satu lomba membaca puisi di sekolah. Hadiahnya adalah sebuah buku cerita dongeng yang tebal dan alat tulis yang sangat bagus.",
+        "Perahu layar milik nelayan itu berwarna-warni terombang-ambing di laut. Nelayan pulang membawa hasil tangkapan yang melimpah untuk dijual di pasar ikan.",
+        "Sore hari matahari mulai terbenam di ufuk barat. Warna langit berubah menjadi jingga kemerahan yang sangat indah. Burung-burung terbang kembali menuju sarang mereka.",
+        "Beruang kutub hidup di tempat yang sangat dingin dan penuh dengan salju. Bulu tebal mereka melindungi tubuh agar tetap hangat walau sedang mencari mangsa ikan.",
+        "Arka bangun pagi-pagi sekali untuk merapikan tempat tidurnya. Setelah mandi, ia menyantap roti panggang isi cokelat dan segelas susu hangat yang disiapkan ibu.",
+        "Kereta cepat itu melaju tanpa suara menyusuri rel panjang di tengah kota. Penumpang di dalam duduk dengan sangat nyaman sambil melihat pemandangan dari jendela kaca.",
+        "Setiap malam sebelum tidur, ayah membacakan cerita tentang petualangan para ksatria yang gagah berani melawan naga sakti demi menyelamatkan sebuah kerajaan.",
+        "Di dasar laut yang dalam terdapat terumbu karang yang sangat cantik. Banyak ikan badut kecil bersembunyi di sela anemon agar aman dari ikan hiu besar yang buas.",
+        "Katak melompat ke atas daun teratai yang mengapung di tengah kolam. Ia mengeluarkan suara parau memanggil teman-temannya saat rintik hujan mulai turun sore itu.",
+        "Saat lomba lari di sekolah, Arka berlari sangat cepat mengalahkan teman-teman sekelasnya. Keringat bercucuran, tetapi hati Arka merasa sangat puas dan bangga menjadi juara.",
+        "Pekerja bangunan sedang menyusun batu bata untuk membangun tembok rumah. Mereka bekerja sangat giat dari pagi hingga sore hari di bawah terik sinar matahari.",
+        "Polisi lalu lintas berdiri di perempatan jalan yang sangat ramai. Dengan peluit di mulut, ia mengatur mobil dan motor agar tidak terjadi kecelakaan.",
+        "Dokter gigi menyarankan Arka untuk tidak terlalu banyak makan permen manis. Jika gigi berlubang, rasanya pasti sakit sekali dan harus dicabut oleh dokter.",
+        "Petugas pemadam kebakaran sangat berani melawan kobaran api yang panas. Dengan semprotan air yang kuat, mereka berhasil memadamkan api yang melahap gedung tinggi itu.",
+        "Di ruang angkasa sana terdapat banyak sekali planet selain bumi. Bintang-bintang bersinar terang menghiasi kegelapan malam yang tenang.",
+        "Gajah menggunakan belalainya yang panjang untuk mengambil makanan dan menyedot air minum. Walaupun tubuhnya sangat besar, gajah merupakan hewan yang lembut.",
+        "Semut selalu berjalan berbaris rapi mengikuti pemimpinnya menuju sumber makanan. Mereka saling bekerja sama menggotong makanan yang jauh lebih besar dari tubuhnya.",
+        "Awan hitam menggumpal di langit menandakan hujan akan segera turun. Angin kencang menerbangkan dedaunan kering yang berserakan di jalanan.",
+        "Pesulap di atas panggung mengeluarkan kelinci putih dari topi hitam kosong. Penonton bertepuk tangan dengan sangat meriah melihat keajaiban yang terjadi.",
+        "Setelah membantu ibu menyapu lantai rumah, Arka mendapat hadiah sebuah pelukan hangat. Rumah yang bersih membuat keluarga merasa lebih nyaman dan sehat.",
+        "Cacing tanah membantu petani membuat tanah menjadi subur. Cacing membuat terowongan kecil di bawah tanah sehingga udara dan air bisa masuk menyerap ke akar tanaman.",
+        "Bermain layang-layang di lapangan terbuka saat sore hari sangat mengasyikkan. Arka harus menarik benang dengan sangat kuat agar layangan bisa terbang menembus angin.",
+        "Membaca buku setiap hari membuat otak kita menjadi makin pintar. Di dalam buku banyak sekali ilmu pengetahuan dan cerita petualangan yang tidak ada habisnya."
+      ]
+    };
+
+    let waktu;
+    let timerInterval;
+    let targetTeksLengkap = "";
+    let teksArka = "";
+    
+    // Mesin Pengenal Suara (Speech Recognition)
+    window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition;
+
+    if (window.SpeechRecognition) {
+      recognition = new SpeechRecognition();
+      recognition.lang = 'id-ID'; 
+      recognition.continuous = true; 
+      recognition.interimResults = true; 
+    }
+
+    // FUNGSI PAKSAAN IZIN MIC
+    function mintaAksesMic() {
+      if (!recognition) {
+        alert("Maaf, browser ini tidak mendukung fitur rekam suara (Coba gunakan Google Chrome).");
+        return;
+      }
+      
+      document.getElementById('live-transcript').innerText = "Meminta izin Mikrofon...";
+      
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(function(stream) {
+          // Izin sukses, lanjut main
+          mulaiGameDanRekam();
+        })
+        .catch(function(err) {
+          alert("Akses Mikrofon ditolak. Mohon izinkan akses mikrofon melalui pengaturan browser HP Anda.");
+        });
+    }
+
+    function mulaiGameDanRekam() {
+      const level = document.getElementById('set-level').value;
+      const bankCerita = dbCerita[level];
+      
+      // Pilih cerita secara acak dari 100 database
+      targetTeksLengkap = bankCerita[Math.floor(Math.random() * bankCerita.length)];
+      
+      waktu = parseInt(document.getElementById('set-waktu').value);
+      teksArka = "";
+
+      document.getElementById('screen-menu').classList.add('hidden');
+      document.getElementById('screen-game').classList.remove('hidden');
+      
+      document.getElementById('target-text').innerText = targetTeksLengkap;
+      document.getElementById('timer').innerText = waktu;
+      document.getElementById('timer').style.color = "#facc15";
+      document.getElementById('live-transcript').innerText = "Mendengarkan...";
+
+      // Mulai Rekam Suara
+      try {
+        recognition.start();
+      } catch (e) {
+        console.log("Mic sedang aktif");
+      }
+
+      // Jalankan Waktu
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        waktu--;
+        document.getElementById('timer').innerText = waktu;
+        if (waktu <= 5) document.getElementById('timer').style.color = "var(--danger)";
+        
+        if (waktu <= 0) {
+          selesaiBaca(); // Berhenti saat waktu habis
+        }
+      }, 1000);
+
+      // Tangkap suara secara live
+      recognition.onresult = function(event) {
+        let interimTranscript = '';
+        let finalTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript + ' ';
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
+        }
+        
+        teksArka += finalTranscript;
+        document.getElementById('live-transcript').innerText = interimTranscript || "...";
+      };
+
+      recognition.onerror = function(event) {
+        if(event.error !== 'no-speech') {
+           document.getElementById('live-transcript').innerText = "Gangguan: " + event.error;
+        }
+      };
+    }
+
+    function selesaiBaca() {
+      clearInterval(timerInterval);
+      if (recognition) recognition.stop();
+      
+      document.getElementById('screen-game').classList.add('hidden');
+      document.getElementById('screen-recap').classList.remove('hidden');
+
+      koreksiBacaan();
+    }
+
+    function koreksiBacaan() {
+      const bersihkanTeks = (teks) => teks.toLowerCase().replace(/[.,!?]/g, '').split(' ');
+      
+      let arrTarget = bersihkanTeks(targetTeksLengkap);
+      let hasilSuaraArka = teksArka.toLowerCase();
+      
+      let jumlahBenar = 0;
+      let htmlKoreksi = "";
+
+      arrTarget.forEach(kataKunci => {
+        if (!kataKunci.trim()) return;
+
+        if (hasilSuaraArka.includes(kataKunci)) {
+          htmlKoreksi += `<span class="word-correct">${kataKunci}</span> `;
+          jumlahBenar++;
+          hasilSuaraArka = hasilSuaraArka.replace(kataKunci, ''); 
+        } else {
+          htmlKoreksi += `<span class="word-wrong">${kataKunci}</span> `;
+        }
+      });
+
+      document.getElementById('koreksi-hasil').innerHTML = htmlKoreksi;
+
+      let persentase = Math.round((jumlahBenar / arrTarget.length) * 100);
+      let skorEl = document.getElementById('final-score');
+      skorEl.innerText = persentase;
+
+      if (persentase >= 80) {
+        skorEl.style.color = "var(--success)";
+        document.getElementById('score-msg').innerText = "Luar Biasa! Arka Membaca Sangat Lancar!";
+      } else if (persentase >= 50) {
+        skorEl.style.color = "#facc15"; 
+        document.getElementById('score-msg').innerText = "Bagus! Terus berlatih agar lebih cepat ya.";
+      } else {
+        skorEl.style.color = "var(--danger)";
+        document.getElementById('score-msg').innerText = "Waktunya habis atau banyak yang terlewat. Coba lagi yuk!";
+      }
+    }
+
+    // Fungsi Kembali ke Awal tanpa Reload Layar
+    function mainLagi() {
+      document.getElementById('screen-recap').classList.add('hidden');
+      document.getElementById('screen-menu').classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
