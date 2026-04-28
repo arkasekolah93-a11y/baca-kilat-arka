@@ -48,6 +48,10 @@
     .recap-box { background: #0f172a; padding: 20px; border-radius: 15px; text-align: left; margin-bottom: 20px; font-size: 1.3rem; line-height: 1.6; }
     .word-correct { color: var(--success); font-weight: bold; border-bottom: 3px solid var(--success); }
     .word-wrong { color: var(--danger); text-decoration: line-through; opacity: 0.5; }
+
+    /* Style Tombol Reset */
+    .btn-reset { background: none; border: none; color: #64748b; font-size: 0.8rem; margin-top: 30px; cursor: pointer; text-decoration: underline; transition: color 0.2s; }
+    .btn-reset:hover { color: var(--danger); }
   </style>
 </head>
 <body>
@@ -76,6 +80,8 @@
     </div>
 
     <button class="btn-main" onclick="mintaAksesMic()">MULAI BALAPAN BACA!</button>
+
+    <button class="btn-reset" onclick="resetBintang()">Mulai Tabungan Dari Nol</button>
   </div>
 
   <div id="screen-game" class="container hidden">
@@ -110,7 +116,7 @@
   </div>
 
   <script>
-    // --- DATABASE CERITA (TERMASUK DUNIA ARKA) ---
+    // --- DATABASE CERITA ---
     const dbCerita = {
       arka: [
         "Nama aku Arka. Aku tinggal di Jayapura yang indah. Aku punya Ayah Ardian dan Ibu Kartika yang sayang padaku.",
@@ -125,9 +131,12 @@
     };
 
     let waktu, maxWaktu, timerInterval, targetTeksLengkap, teksArka, isPlaying = false;
+    
+    // Inisialisasi Bintang dari LocalStorage
     let stars = parseInt(localStorage.getItem('arka_stars')) || 0;
     document.getElementById('total-stars').innerText = stars;
 
+    // Speech Recognition Setup
     window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let recognition;
     if (window.SpeechRecognition) {
@@ -137,12 +146,24 @@
       recognition.interimResults = true; 
     }
 
+    // Fungsi Reset Bintang
+    function resetBintang() {
+      const yakin = confirm("Apakah Ayah yakin ingin menghapus semua bintang Arka dan mulai dari nol?");
+      if (yakin) {
+        stars = 0;
+        localStorage.setItem('arka_stars', 0);
+        document.getElementById('total-stars').innerText = 0;
+        alert("Bintang sudah kembali ke nol! Semangat menabung lagi ya Arka!");
+      }
+    }
+
     function mintaAksesMic() {
-      if (!recognition) { alert("Browser tidak support mic."); return; }
+      if (!recognition) { alert("Browser tidak support fitur suara."); return; }
       navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        // Stop stream agar tidak bentrok dengan recognition
         stream.getTracks().forEach(track => track.stop());
         mulaiGame();
-      }).catch(() => alert("Izin mic ditolak!"));
+      }).catch(() => alert("Izin mic ditolak! Game tidak bisa mendengar suara Arka."));
     }
 
     function mulaiGame() {
@@ -177,12 +198,15 @@
         cekAutoSelesai(teksArka + interim);
       };
       
-      recognition.onend = () => { if(isPlaying && waktu > 0) setTimeout(()=> { try{recognition.start()}catch(e){} }, 500); };
+      recognition.onend = () => { 
+        if(isPlaying && waktu > 0) {
+          setTimeout(()=> { try{recognition.start()}catch(e){} }, 1000); 
+        }
+      };
     }
 
     function updateRacingTrack() {
       document.getElementById('timer-text').innerText = waktu;
-      // Mobil bergerak dari 0% ke 85% berdasarkan sisa waktu
       let progress = ((maxWaktu - waktu) / maxWaktu) * 85;
       document.getElementById('car-avatar').style.left = progress + "%";
     }
@@ -208,8 +232,13 @@
 
       targetArr.forEach(kata => {
         if (!kata.trim()) return;
-        if (suara.includes(kata)) { html += `<span class="word-correct">${kata}</span> `; benar++; suara = suara.replace(kata, ''); }
-        else { html += `<span class="word-wrong">${kata}</span> `; }
+        if (suara.includes(kata)) { 
+          html += `<span class="word-correct">${kata}</span> `; 
+          benar++; 
+          suara = suara.replace(kata, ''); 
+        } else { 
+          html += `<span class="word-wrong">${kata}</span> `; 
+        }
       });
 
       let persen = Math.round((benar / targetArr.length) * 100);
@@ -243,9 +272,12 @@
       document.getElementById('screen-recap').classList.add('hidden');
       document.getElementById('screen-menu').classList.remove('hidden');
     }
-
-    function mainLagi() { document.getElementById('screen-recap').classList.add('hidden'); document.getElementById('screen-menu').classList.remove('hidden'); }
   </script>
-  <script>if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }</script>
+  
+  <script>
+    if ('serviceWorker' in navigator) { 
+      navigator.serviceWorker.register('sw.js'); 
+    }
+  </script>
 </body>
 </html>
