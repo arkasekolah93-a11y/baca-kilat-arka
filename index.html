@@ -103,7 +103,7 @@
     let timerInterval;
     let targetTeksLengkap = "";
     let teksArka = "";
-    let isPlaying = false; // Penanda game sedang berjalan
+    let isPlaying = false; 
     
     window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let recognition;
@@ -111,14 +111,14 @@
     if (window.SpeechRecognition) {
       recognition = new SpeechRecognition();
       recognition.lang = 'id-ID'; 
-      // UBAH: Matikan continuous agar tidak memonopoli mic dan bentrok dengan Google
       recognition.continuous = false; 
       recognition.interimResults = true; 
     }
 
+    // FUNGSI PAKSAAN IZIN MIC YANG SUDAH DIPERBAIKI
     function mintaAksesMic() {
       if (!recognition) {
-        alert("Maaf, browser ini tidak mendukung fitur rekam suara.");
+        alert("Maaf, browser ini tidak mendukung fitur rekam suara. Gunakan Google Chrome atau Microsoft Edge.");
         return;
       }
       
@@ -126,6 +126,10 @@
       
       navigator.mediaDevices.getUserMedia({ audio: true })
         .then(function(stream) {
+          // Matikan aliran mikrofon segera setelah izin didapat
+          // agar tidak bentrok dengan mesin Speech Recognition
+          stream.getTracks().forEach(track => track.stop());
+          
           mulaiGameDanRekam();
         })
         .catch(function(err) {
@@ -183,7 +187,6 @@
         }
       };
 
-      // UBAH: Trik menyambung ulang otomatis jika terputus sebelum waktunya
       recognition.onend = function() {
         if (isPlaying && waktu > 0) {
           try { recognition.start(); } catch(e) {}
@@ -195,7 +198,6 @@
       isPlaying = false;
       clearInterval(timerInterval);
       if (recognition) {
-        // Hapus onend sementara agar tidak looping
         recognition.onend = null; 
         recognition.stop();
       }
